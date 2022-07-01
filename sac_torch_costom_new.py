@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 This code mainly follows a Soft-Actor Critic YouTube tutorial (with modifications) found at:
 https://www.youtube.com/watch?v=ioidsRlf79o&t=2649s
@@ -15,6 +17,8 @@ from buffer import ReplayBuffer
 from networks import ActorNetwork, CriticNetwork, ValueNetwork, DiscriminatorNetwork
 import copy
 
+import rospy
+
 class Agent():
     def __init__(self, alpha=0.001, beta=0.001, disc_lr=.0001, input_dims=[8], 
             env=None, gamma=0.99, n_actions=2, max_size=1000000, tau=0.005,
@@ -27,7 +31,6 @@ class Agent():
         self.batch_size = batch_size
         self.n_actions = n_actions
         self.max_action = 1
-        self.env = env
         self.auto_entropy = auto_entropy
         self.actor = ActorNetwork(alpha, input_dims, fc1_dims=layer1_size, fc2_dims=layer2_size, n_actions=n_actions,
                     name='actor', max_action=self.max_action)
@@ -50,7 +53,7 @@ class Agent():
 
         self.scale = reward_scale
         self.update_network_parameters(tau=1)
-        self.target_entropy = -np.prod(self.env.action_space.shape).astype(np.float32)
+        self.target_entropy = -np.prod((self.n_actions,)).astype(np.float32)
         self.log_alpha = torch.zeros(1, requires_grad=True, device=self.actor.device)
         if entr_lr is None:
             self.entr_lr = alpha
@@ -126,10 +129,10 @@ class Agent():
             scaled_limit_factor = limit_factor/1
 
             disc_state = torch.clone(state)
-            #disc_state = disc_state[:, :-1]
+            # x-vel
+            disc_state = disc_state[:, 1:2]
             #speed
-            disc_state = disc_state[:, 2:3]
-
+            #disc_state = disc_state[:, 2:3]
             actions, log_probs = self.actor.sample_normal(state, reparameterize=False)
             log_probs = log_probs.view(-1)
             q1_new_policy = self.critic_1.forward(state, actions)
@@ -142,6 +145,7 @@ class Agent():
             #critic_value = scaled_limit_factor*disc_critic_value + (1-scaled_limit_factor)*env_critic_value
             critic_value = disc_critic_value
             critic_value = critic_value.view(-1)
+
 
             self.value.optimizer.zero_grad()
             value_target = (-self.entropy*log_probs + critic_value)
@@ -196,7 +200,6 @@ class Agent():
 
             log_prob_of_lf = torch.clone(log_prob_of_lf).to('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-            
 
             if torch.any(torch.isinf(disc_log_probs)) or torch.any(torch.isnan(disc_log_probs)) :
                 print(disc_log_probs, "disc_log_probs")
@@ -207,13 +210,18 @@ class Agent():
             if torch.any(torch.isinf(value_)) or torch.any(torch.isnan(value_)):
                 print(value_, "log_prob_of_lf")    
 
-            rew=-torch.log(torch.clamp((dist.cdf(disc_predictions)-dist.cdf(limit_factor))**2, min=.000001, max=.9999))
+            rew=-torch.log(torch.clamp(torch.abs(dist.cdf(disc_predictions)-dist.cdf(limit_factor)), min=.000001, max=.9999))
             if torch.any(torch.isinf(rew)) or torch.any(torch.isnan(rew)):
                 print(rew, "rew")    
                 print((dist.cdf(disc_predictions)-dist.cdf(limit_factor))**2, "diff")
+            #rew = (rew[:,-1]+reward)*10
+            
+            #print(rew)
             rew = (rew[:,-1])*10
-            rew = torch.where(reward<-50, reward*12, rew)
-            ind = torch.nonzero(reward < -40)
+            rew = torch.where(reward<-19, reward*12, rew)
+            #print(torch.mean(rew))
+            #rew = torch.where(reward>-100, reward*12, rew)
+            #ind = torch.nonzero(reward < -40)
             #if len(ind) > 0:
             #    print(rew[ind], "reward") 
             #    print(reward[ind], "env")
@@ -230,6 +238,7 @@ class Agent():
             self.disc_critic_1.optimizer.step()
             self.disc_critic_2.optimizer.step()
 
+            
             disc_loss = None
             if update_disc:
                 state, action, reward, new_state, done = \
@@ -252,14 +261,13 @@ class Agent():
 
                 disc_state = torch.clone(state)
                 #disc_state = disc_state[:, :-1]
-                #speed
-                disc_state = disc_state[:, 2:3]
+                disc_state = disc_state[:, 1:2]
                 disc_predictions, disc_log_probs, dist = self.discriminator.predict(disc_state, requires_grad=True)
                 print(max(dist.loc), min(dist.loc))
                 print(max(dist.scale), min(dist.scale))
                 print("diff", ((dist.cdf(disc_predictions)-dist.cdf(limit_factor))**2)[0])
                 self.discriminator.optimizer.zero_grad()
-                disc_loss = (F.mse_loss(disc_predictions, limit_factor)*10+ (1/torch.abs((min(dist.loc)-max(dist.loc)))))*10 
+                disc_loss = (F.mse_loss(disc_predictions, limit_factor)*10+ (torch.nan_to_num((1/(torch.abs((min(dist.loc)-max(dist.loc)))+.0001))))*10) 
                 #disc_loss = (F.mse_loss(disc_predictions, limit_factor) + 1/torch.std(dist.loc))*10 
                 #print(torch.std(dist.loc))
                 print("mse loss: ", F.mse_loss(disc_predictions, limit_factor))
@@ -277,7 +285,7 @@ class Agent():
             
             if disc_loss is not None:
                 return actor_loss, disc_loss, torch.mean(disc_log_probs).item(), \
-                    torch.mean(critic_value).item()
+                    torch.mean(critic_value).item(), self.entropy.item()
             else:
                 return actor_loss, disc_loss
         else:

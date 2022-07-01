@@ -3,7 +3,7 @@ from tkinter import *
 import tkinter as tk
 import time, pickle
 import threading
-import gym
+from point_sim import PointSim
 
 class App(threading.Thread):
 
@@ -32,11 +32,11 @@ app = App()
 #app2 = App()
 for i in range(100000):
     
-    env = gym.make('BipedalWalker-v3')
+    env = PointSim()
     #LunarLanderContinuous-v2
     #agent = Agent(alpha=0.000314854, beta=0.000314854, input_dims=env.observation_space.shape, env=env, batch_size=128,
     #        tau=.02, max_size=50000, layer1_size=400, layer2_size=300, n_actions=env.action_space.shape[0], reward_scale=1, auto_entropy=True,max_action=.5)
-    agent = pickle.load(open("agents\SA_15rew_speed_10MSEandp1_sparEnvRew_cdfOnly_withMaxDiff_from3500_indexRew_8000.p", "rb" ))
+    agent = pickle.load(open("agents\point_minus20_1000.p", "rb" ))
     print(agent.scale)
     #agent.actor.max_action=.1
     n_games = 3000
@@ -48,7 +48,7 @@ for i in range(100000):
 
     figure_file = 'plots/' + filename
 
-    best_score = env.reward_range[0]
+    best_score = -10000
     score_history = []
     load_checkpoint = False
 
@@ -61,6 +61,7 @@ for i in range(100000):
 
     render = False
     env_interacts = 0
+
     for i in range(n_games):
         speed = []
         yvel=[]
@@ -68,7 +69,9 @@ for i in range(100000):
         observation = np.concatenate((observation, [limit_factor]))
         done = False
         score = 0
+        episode_interacts=0
         while not done:
+            episode_interacts+=1
             app.run()
             #app2.run()
             limit_factor = app.w.get()
@@ -77,11 +80,12 @@ for i in range(100000):
             #if env_interacts%300 == 0:
             #    print("INTERACT", env_interacts)
             action = agent.choose_action(observation)
-            observation_, reward, done, info = env.step(action)
+            observation_, reward, done = env.step(action)
             observation_ = np.concatenate((observation_, [limit_factor]))
             score += reward
             speed.append(observation[2])
             yvel.append(observation[0])
+            time.sleep(.1)
             #agent.remember(observation, action, reward, observation_, done)
             #if not load_checkpoint:
                 #if env_interacts > 1000:
@@ -94,7 +98,7 @@ for i in range(100000):
                 print(observation[4], observation[6] )
                 time.sleep(2)"""
             #if render:
-            env.render()
+            print(action)
             observation = observation_
             #env.render()
         score_history.append(score)
@@ -112,7 +116,7 @@ for i in range(100000):
         #print(limit_factor, limit_factor2)
         print(limit_factor)
         #print('episode ', i, 'score %.1f' % score, 'avg_score %.1f' % avg_score, f"speed: {np.mean(speed)}", f"yvel: {np.mean(yvel)}")
-        print('episode ', i, 'score %.1f' % score, 'avg_score %.1f' % avg_score, f"speed: {np.mean(speed)}")
+        print('episode ', i, 'score %.1f' % score, 'avg_score %.1f' % avg_score, f"speed: {np.mean(speed)}", f"episode_interacts: {episode_interacts}")
 
 
 

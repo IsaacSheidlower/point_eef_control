@@ -112,7 +112,8 @@ class ActorNetwork(nn.Module):
 
         mu = self.mu(prob)
         sigma = self.sigma(prob)
-
+        mu = torch.nan_to_num(mu)
+        sigma = torch.nan_to_num(sigma)
         sigma = torch.clamp(sigma, min=self.reparam_noise, max=1)
 
         return mu, sigma
