@@ -20,8 +20,11 @@ if __name__ == '__main__':
     #BipedalWalker-v3
     print(env.observation_space.shape)
     in_dims = (3,)
+    #agent = Agent(alpha=.003, beta=.003, disc_lr=.001, input_dims=in_dims, env=env, batch_size=256, disc_layer1_size=256, disc_layer2_size=256,
+    #        tau=.02, max_size=100000, layer1_size=400, layer2_size=300, n_actions=env.action_space.shape[0], reward_scale=15, auto_entropy=True, disc_input_dims=(1,), predict_dims=1)
+
     agent = Agent(alpha=.003, beta=.003, disc_lr=.001, input_dims=in_dims, env=env, batch_size=256, disc_layer1_size=256, disc_layer2_size=256,
-            tau=.02, max_size=100000, layer1_size=400, layer2_size=300, n_actions=env.action_space.shape[0], reward_scale=15, auto_entropy=True, disc_input_dims=(1,), predict_dims=1)
+        tau=.02, max_size=100000, layer1_size=400, layer2_size=300, n_actions=env.action_space.shape[0], reward_scale=15, auto_entropy=True, disc_input_dims=(1,), predict_dims=1)
     #agent = pickle.load(open("/content/drive/MyDrive/costum_rl_agents/SA_15rew_speed_10MSEandp1_sparEnvRew_cdfOnly_withMaxDiff_from3500_indexRew_8000.p", "rb" ))
     #agent.actor.max_action=1
     n_games = 2001
@@ -69,7 +72,7 @@ if __name__ == '__main__':
             observation_ = np.concatenate((observation_, [limit_factor]))
             score += reward
             temp_rew = reward
-            if reward < old_reward:
+            if reward <= old_reward:
                 reward = -20
             else:
                 reward = 0
@@ -96,6 +99,7 @@ if __name__ == '__main__':
             else:        
                 try:
                     act_loss, _ = agent.learn()
+                    act_loss, _ = agent.learn()
                     #if act_loss is not None:
                         #writer.add_scalar(f"Loss/act_loss_366_14", np.mean(act_loss.item()),env_interacts)
                         #writer.add_scalar("Loss/disc_loss", np.mean(disc_loss.item()),env_interacts)
@@ -110,6 +114,8 @@ if __name__ == '__main__':
             #if render:
             #env.render()
             observation = observation_
+            if episode_interacts > 200:
+                done = True
             #limit_factor = np.random.uniform(low=.4, high=1)
             #env.render()
         score_history.append(score)
@@ -128,7 +134,7 @@ if __name__ == '__main__':
         print('episode ', i, 'score %.1f' % score, 'avg_score %.1f, ' % avg_score, "limit_factor %.2f" % limit_factor, ", interacts, ", episode_interacts)
 
         if i % 100 == 0 and i > 500:
-            pickle.dump(agent, open( f"agents/point_minus20_{i}.p", "wb" ) )
+            pickle.dump(agent, open( f"agents/point_minus20_doubleLearn_20scale_{i}.p", "wb" ) )
     
     #pickle.dump(agent, open( "speedAngle13rew_visi5_3500.p", "wb" ) )
     #np.save("BP_sac_2000", rewards)
