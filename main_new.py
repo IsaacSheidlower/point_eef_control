@@ -50,7 +50,7 @@ if __name__ == '__main__':
     writer = SummaryWriter()
     #action = env.action_space.sample()
 
-    old_reward = 0
+    old_reward = -100
 
     for i in range(0, n_games):
         observation = env.reset()
@@ -60,6 +60,7 @@ if __name__ == '__main__':
         #limit_factor2 = np.random.uniform(low=0, high=1)
         observation = np.concatenate((observation, [limit_factor]))
         episode_interacts=0
+        old_reward = -100
         while not done:
             env_interacts+=1
             episode_interacts+=1
@@ -74,6 +75,7 @@ if __name__ == '__main__':
             temp_rew = reward
             if reward <= old_reward:
                 reward = -20
+                print("Bad reward", observation_, action, temp_rew, episode_interacts)
             else:
                 reward = 0
             agent.remember(observation, action, reward, observation_, done)

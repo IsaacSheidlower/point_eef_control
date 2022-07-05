@@ -1,11 +1,12 @@
 import numpy as np
 
-pos = 0
+pos = .2
 velocity = 0
+max_acceleration = 0.05 # max change in velocity per time step
 
 class PointSim():
     def __init__(self, action_duration=.2, goal_point=.6, max_velocity=.2, goal_threshold=0.1,  
-                 min_pos=-.3, max_pos=.6, max_action=.2):
+                 min_pos=-.3, max_pos=.6, max_action=.3):
         self.action_duration = action_duration
         self.goal_point = goal_point
         self.max_velocity = max_velocity
@@ -19,7 +20,7 @@ class PointSim():
     def reset(self):
         global pos
         global velocity
-        pos = 0
+        pos = .2
         velocity = 0
         return self.get_obs()
     
@@ -28,19 +29,31 @@ class PointSim():
         global velocity
         return [pos, velocity]
 
+
     def step(self, action):
         global pos
         global velocity
         
         action = action[0]
-        action-=self.max_action
-        velocity += action*self.action_duration
-        if action > 0:
-            velocity = np.clip(velocity, -self.max_velocity, action)
-        else:
-            velocity = np.clip(velocity, action, self.max_velocity)
-        velocity = np.clip(velocity, -self.max_velocity, self.max_velocity)
+        action-=.5
+        action = action*2
+        action=action*self.max_action
+
+        goal_velocity = action
+        curr_velocity = velocity
+        if (curr_velocity < goal_velocity):
+            curr_velocity += max_acceleration * self.action_duration
+        elif (curr_velocity > goal_velocity):
+            curr_velocity -= max_acceleration * self.action_duration
+        
+        # velocity += action*self.action_duration
+        # if action > 0:
+        #     velocity = np.clip(velocity, -self.max_velocity, action)
+        # else:
+            # velocity = np.clip(velocity, action, self.max_velocity)
+        velocity = np.clip(curr_velocity, -self.max_velocity, self.max_velocity)
         velocity += np.random.normal(0, 0.005)
+
         pos += velocity*self.action_duration
         if pos < self.min_pos or pos > self.max_pos:
             pos = np.clip(pos, self.min_pos, self.max_pos)
