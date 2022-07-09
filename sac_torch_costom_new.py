@@ -210,8 +210,8 @@ class Agent():
             if torch.any(torch.isinf(value_)) or torch.any(torch.isnan(value_)):
                 print(value_, "log_prob_of_lf")    
 
-            rew=-torch.log(torch.clamp(torch.abs(dist.cdf(disc_predictions)-dist.cdf(limit_factor)), min=.0000001, max=.99999))
-            #rew=-torch.log(torch.clamp(torch.abs(disc_predictions-limit_factor), min=.0000001, max=.99999))
+            #rew=-torch.log(torch.clamp(torch.abs(dist.cdf(disc_predictions)-dist.cdf(limit_factor)), min=.0000001, max=.99999))
+            rew=-torch.log(torch.clamp(torch.abs(disc_predictions-limit_factor), min=.0000001, max=.99999))
             if torch.any(torch.isinf(rew)) or torch.any(torch.isnan(rew)):
                 print(rew, "rew")    
                 print((dist.cdf(disc_predictions)-dist.cdf(limit_factor))**2, "diff")
@@ -250,10 +250,6 @@ class Agent():
                 state_ = torch.tensor(new_state, dtype=torch.float).to(self.actor.device)
                 state = torch.tensor(state, dtype=torch.float).to(self.actor.device)
                 action = torch.tensor(action, dtype=torch.float).to(self.actor.device)
-
-                value = self.value(state).view(-1)
-                value_ = self.target_value(state_).view(-1)
-                value_[done] = 0.0
 
                 limit_factor = torch.clone(state)
                 limit_factor = limit_factor[:, -1]

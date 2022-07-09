@@ -2,7 +2,7 @@ import numpy as np
 
 pos = .2
 velocity = 0
-max_acceleration = 0.05 # max change in velocity per time step
+max_acceleration = 0.1 # max change in velocity per time step
 
 class PointSim():
     def __init__(self, action_duration=.2, goal_point=.6, max_velocity=.2, goal_threshold=0.1,  
@@ -35,13 +35,14 @@ class PointSim():
         global velocity
         
         action = action[0]
-        action-=.5
+        action -= .5
         action = action*2
-        action=action*self.max_action
+        action = action*self.max_action
+        #print("ACTION: ", action, "VELOCITY: ", velocity)
 
         goal_velocity = action
         curr_velocity = velocity
-        if (curr_velocity < goal_velocity):
+        if (curr_velocity <= goal_velocity):
             curr_velocity += max_acceleration * self.action_duration
         elif (curr_velocity > goal_velocity):
             curr_velocity -= max_acceleration * self.action_duration
@@ -52,7 +53,7 @@ class PointSim():
         # else:
             # velocity = np.clip(velocity, action, self.max_velocity)
         velocity = np.clip(curr_velocity, -self.max_velocity, self.max_velocity)
-        velocity += np.random.normal(0, 0.005)
+        velocity += np.random.normal(0, 0.01)
 
         pos += velocity*self.action_duration
         if pos < self.min_pos or pos > self.max_pos:

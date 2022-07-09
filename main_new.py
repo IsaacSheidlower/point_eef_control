@@ -12,6 +12,7 @@ import numpy as np
 from sac_torch_costom_new import Agent
 import time
 import pickle
+from disctiminator import Discriminator
 
 from tensorboardX import SummaryWriter
 
@@ -23,10 +24,11 @@ if __name__ == '__main__':
     #agent = Agent(alpha=.003, beta=.003, disc_lr=.001, input_dims=in_dims, env=env, batch_size=256, disc_layer1_size=256, disc_layer2_size=256,
     #        tau=.02, max_size=100000, layer1_size=400, layer2_size=300, n_actions=env.action_space.shape[0], reward_scale=15, auto_entropy=True, disc_input_dims=(1,), predict_dims=1)
 
-    agent = Agent(alpha=.003, beta=.003, disc_lr=.001, input_dims=in_dims, env=env, batch_size=256, disc_layer1_size=256, disc_layer2_size=256,
+    agent = Agent(alpha=.003, beta=.003, disc_lr=.0001, input_dims=in_dims, env=env, batch_size=256, disc_layer1_size=256, disc_layer2_size=256,
         tau=.02, max_size=100000, layer1_size=400, layer2_size=300, n_actions=env.action_space.shape[0], reward_scale=15, auto_entropy=True, disc_input_dims=(1,), predict_dims=1)
     #agent = pickle.load(open("/content/drive/MyDrive/costum_rl_agents/SA_15rew_speed_10MSEandp1_sparEnvRew_cdfOnly_withMaxDiff_from3500_indexRew_8000.p", "rb" ))
     #agent.actor.max_action=1
+    discrim = Discriminator(input_dims=(3,), layer1_size=256, layer2_size=256)
     n_games = 2001
     rewards = []
     # uncomment this line and do a mkdir tmp && mkdir video if you want to
@@ -75,20 +77,27 @@ if __name__ == '__main__':
             temp_rew = reward
             if reward <= old_reward:
                 reward = -20
-                print("Bad reward", observation_, action, temp_rew, episode_interacts)
+                #print("Bad reward", observation_, action, temp_rew, episode_interacts)
             else:
                 reward = 0
             agent.remember(observation, action, reward, observation_, done)
+            discrim.remember(observation, action, reward, observation_, done)
+
+            ab, bc = discrim.learn()
+            print("AAAAAA", ab, bc)
+            print("DISC", discrim.calculate_reward(observation, reward, -19))
             old_reward = temp_rew
             #if not load_checkpoint:
                 #if env_interacts > 1000:
             #if env_interacts % 400:
             #    limit_factor = np.random.uniform(low=0, high=1)
             observation[-1] = limit_factor
-            if env_interacts % 100 == 0:
+            if env_interacts % 25 == 0:
                 try:
                     act_loss, disc1_loss, disc1_log_probs, \
                         disc1_crit, entropy = agent.learn(update_params=True, update_disc=True)
+                    #act_loss, disc1_loss, disc1_log_probs, \
+                    #    disc1_crit, entropy = agent.learn(update_params=True, update_disc=True)
                     if act_loss is not None and disc1_loss is not None:
                         writer.add_scalar("Loss/act_new", np.mean(act_loss.item()),env_interacts)
                         writer.add_scalar("Loss/disc1_loss_new", np.mean(disc1_loss.item()),env_interacts)
@@ -101,7 +110,8 @@ if __name__ == '__main__':
             else:        
                 try:
                     act_loss, _ = agent.learn()
-                    act_loss, _ = agent.learn()
+                    #act_loss, _ = agent.learn()
+                    #act_loss, _ = agent.learn()
                     #if act_loss is not None:
                         #writer.add_scalar(f"Loss/act_loss_366_14", np.mean(act_loss.item()),env_interacts)
                         #writer.add_scalar("Loss/disc_loss", np.mean(disc_loss.item()),env_interacts)
@@ -136,7 +146,7 @@ if __name__ == '__main__':
         print('episode ', i, 'score %.1f' % score, 'avg_score %.1f, ' % avg_score, "limit_factor %.2f" % limit_factor, ", interacts, ", episode_interacts)
 
         if i % 100 == 0 and i > 500:
-            pickle.dump(agent, open( f"agents/point_minus20_doubleLearn_20scale_{i}.p", "wb" ) )
+            pickle.dump(agent, open( f"agents/point_minus20_noCDF_lowLR_doubleDouble_{i}.p", "wb" ) )
     
     #pickle.dump(agent, open( "speedAngle13rew_visi5_3500.p", "wb" ) )
     #np.save("BP_sac_2000", rewards)

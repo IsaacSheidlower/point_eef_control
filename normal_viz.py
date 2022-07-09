@@ -14,7 +14,7 @@ import torch
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
-agent = pickle.load(open("agents/point_minus20_doubleLearn_20scale_800.p", "rb" ))
+agent = pickle.load(open("agents\point_minus20_noCDF_lowLR_smallDiscBuffer_800.p", "rb" ))
 
 #disc_predictions, disc_log_probs, dist = agent.discriminator.predict(torch.tensor([0.4]).to("cuda:0"), requires_grad=False)
 
@@ -55,7 +55,7 @@ def update(curr):
             input = np.array([speeds[curr]])
         except:
             input = np.array([speeds[curr-2]])
-        input = torch.from_numpy(input).float()
+        input = torch.from_numpy(input).float().cuda()
         #print(input)
         disc_predictions, disc_log_probs, dist = agent.discriminator.predict(input, requires_grad=False)
         mean = dist.loc.item()
