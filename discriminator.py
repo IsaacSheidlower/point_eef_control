@@ -43,14 +43,14 @@ class Discriminator():
         #disc_state = disc_state[:, :-1]
         disc_state = disc_state[:, 1:2]
         disc_predictions, log_probs, dist = self.discriminator.predict(disc_state, requires_grad=True)
-        print(max(dist.loc), min(dist.loc))
-        print(max(dist.scale), min(dist.scale))
-        print("diff", ((dist.cdf(disc_predictions)-dist.cdf(limit_factor))**2)[0])
+        #print(max(dist.loc), min(dist.loc))
+        #print(max(dist.scale), min(dist.scale))
+        #print("diff", ((dist.cdf(disc_predictions)-dist.cdf(limit_factor))**2)[0])
         self.discriminator.optimizer.zero_grad()
         loss = (F.mse_loss(disc_predictions, limit_factor)*10+ (torch.nan_to_num((1/(torch.abs((min(dist.loc)-max(dist.loc)))+.0001))))*10) 
         #loss = (F.mse_loss(disc_predictions, limit_factor) + 1/torch.std(dist.loc))*10 
         #print(torch.std(dist.loc))
-        print("mse loss: ", F.mse_loss(disc_predictions, limit_factor))
+        #print("mse loss: ", F.mse_loss(disc_predictions, limit_factor))
         loss.backward()
         self.discriminator.optimizer.step()
 
@@ -79,6 +79,7 @@ class Discriminator():
         rew = torch.where(reward<rew_threshold, reward*22, rew)
 
         return rew.item()
+
     def save_models(self):
         torch.save(self.discriminator.state_dict(), 'discriminator.pt')
 

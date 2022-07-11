@@ -14,7 +14,7 @@ import torch
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
-agent = pickle.load(open("agents\point_minus20_noCDF_lowLR_smallDiscBuffer_800.p", "rb" ))
+agent = pickle.load(open("agents\point_minus20_noCDF_lowLR_20scale_4000.p", "rb" ))
 
 #disc_predictions, disc_log_probs, dist = agent.discriminator.predict(torch.tensor([0.4]).to("cuda:0"), requires_grad=False)
 

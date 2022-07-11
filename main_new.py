@@ -11,8 +11,8 @@ from point_sim import PointSim
 import numpy as np
 from sac_torch_costom_new import Agent
 import time
-import pickle
-from disctiminator import Discriminator
+import pickle, copy
+from discriminator import Discriminator
 
 from tensorboardX import SummaryWriter
 
@@ -25,10 +25,11 @@ if __name__ == '__main__':
     #        tau=.02, max_size=100000, layer1_size=400, layer2_size=300, n_actions=env.action_space.shape[0], reward_scale=15, auto_entropy=True, disc_input_dims=(1,), predict_dims=1)
 
     agent = Agent(alpha=.003, beta=.003, disc_lr=.0001, input_dims=in_dims, env=env, batch_size=256, disc_layer1_size=256, disc_layer2_size=256,
-        tau=.02, max_size=100000, layer1_size=400, layer2_size=300, n_actions=env.action_space.shape[0], reward_scale=15, auto_entropy=True, disc_input_dims=(1,), predict_dims=1)
-    #agent = pickle.load(open("/content/drive/MyDrive/costum_rl_agents/SA_15rew_speed_10MSEandp1_sparEnvRew_cdfOnly_withMaxDiff_from3500_indexRew_8000.p", "rb" ))
+        tau=.05, disc_batch_size=256, max_size=100000, layer1_size=400, layer2_size=300, n_actions=1, reward_scale=15, auto_entropy=True, disc_input_dims=(1,), predict_dims=1)
+    #agent2 = pickle.load(open("agents\point_minus20_noCDF_lowLR_20scale_4000.p", "rb" ))
+    #agent.discriminator = copy.deepcopy(agent2.discriminator)
     #agent.actor.max_action=1
-    discrim = Discriminator(input_dims=(3,), layer1_size=256, layer2_size=256)
+    #discrim = Discriminator(input_dims=(3,), layer1_size=256, layer2_size=256)
     n_games = 2001
     rewards = []
     # uncomment this line and do a mkdir tmp && mkdir video if you want to
@@ -81,11 +82,11 @@ if __name__ == '__main__':
             else:
                 reward = 0
             agent.remember(observation, action, reward, observation_, done)
-            discrim.remember(observation, action, reward, observation_, done)
+            # discrim.remember(observation, action, reward, observation_, done)
 
-            ab, bc = discrim.learn()
-            print("AAAAAA", ab, bc)
-            print("DISC", discrim.calculate_reward(observation, reward, -19))
+            # ab, bc = discrim.learn()
+            # print("AAAAAA", ab, bc)
+            # print("DISC", discrim.calculate_reward(observation, reward, -19))
             old_reward = temp_rew
             #if not load_checkpoint:
                 #if env_interacts > 1000:

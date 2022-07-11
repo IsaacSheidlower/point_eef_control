@@ -21,14 +21,15 @@ import rospy
 
 class Agent():
     def __init__(self, alpha=0.001, beta=0.001, disc_lr=.0001, input_dims=[8], 
-            env=None, gamma=0.99, n_actions=2, max_size=1000000, tau=0.005,
-            layer1_size=256, layer2_size=256, disc_layer1_size=256, disc_layer2_size=256, disc_batch_size=128, batch_size=256, reward_scale=2, auto_entropy=False, 
+            env=None, gamma=0.99, n_actions=2, max_size=1000000, tau=0.005, disc_batch_size=256,
+            layer1_size=256, layer2_size=256, disc_layer1_size=256, disc_layer2_size=256,batch_size=256, reward_scale=2, auto_entropy=False, 
             entr_lr=None, reparam_noise=1e-6, disc_input_dims=[8], predict_dims=1):
         self.gamma = gamma
         self.tau = tau
         self.memory = ReplayBuffer(max_size, input_dims, n_actions)
         self.disc_memory = ReplayBuffer(1000000, input_dims, n_actions)
         self.batch_size = batch_size
+        self.disc_batch_size = disc_batch_size
         self.n_actions = n_actions
         self.max_action = 1
         self.auto_entropy = auto_entropy
@@ -131,6 +132,9 @@ class Agent():
             disc_state = torch.clone(state)
             # x-vel
             disc_state = disc_state[:, 1:2]
+            disc_state2 = torch.clone(state_)
+            # x-vel
+            disc_state2 = disc_state[:, 1:2]
             #speed
             #disc_state = disc_state[:, 2:3]
             actions, log_probs = self.actor.sample_normal(state, reparameterize=False)
@@ -193,6 +197,9 @@ class Agent():
             disc_predictions, disc_log_probs, dist = self.discriminator.predict(disc_state, requires_grad=False)
             disc_log_probs.to('cuda:0' if torch.cuda.is_available() else 'cpu')
             value_ = torch.clone(value_).detach().to('cuda:0' if torch.cuda.is_available() else 'cpu')
+
+            disc_predictions2, disc_log_probs2, dist2 = self.discriminator.predict(disc_state2, requires_grad=False)
+            disc_log_probs2.to('cuda:0' if torch.cuda.is_available() else 'cpu')
             
             # log probability of the limit factor
 
@@ -212,13 +219,14 @@ class Agent():
 
             #rew=-torch.log(torch.clamp(torch.abs(dist.cdf(disc_predictions)-dist.cdf(limit_factor)), min=.0000001, max=.99999))
             rew=-torch.log(torch.clamp(torch.abs(disc_predictions-limit_factor), min=.0000001, max=.99999))
+            #rew = torch.clamp((torch.abs(disc_predictions-limit_factor) - torch.abs(disc_predictions2-limit_factor)),min=.0000001, max=.99999)*torch.abs(disc_predictions-limit_factor)
             if torch.any(torch.isinf(rew)) or torch.any(torch.isnan(rew)):
                 print(rew, "rew")    
                 print((dist.cdf(disc_predictions)-dist.cdf(limit_factor))**2, "diff")
             #rew = (rew[:,-1]+reward)*10
             
             #print(rew)
-            rew = (rew[:,-1])*20
+            rew = (rew[:,-1])*22
             rew = torch.where(reward<-19, reward*22, rew)
             #print(torch.mean(rew))
             #rew = torch.where(reward>-100, reward*12, rew)
@@ -243,7 +251,7 @@ class Agent():
             disc_loss = None
             if update_disc:
                 state, action, reward, new_state, done = \
-                    self.disc_memory.sample_buffer(self.batch_size)
+                    self.disc_memory.sample_buffer(self.disc_batch_size)
 
                 reward = torch.tensor(reward, dtype=torch.float).to(self.actor.device)
                 done = torch.tensor(done).to(self.actor.device)
