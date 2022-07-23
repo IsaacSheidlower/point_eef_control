@@ -24,7 +24,7 @@ if __name__ == '__main__':
     #agent = Agent(alpha=.003, beta=.003, disc_lr=.001, input_dims=in_dims, env=env, batch_size=256, disc_layer1_size=256, disc_layer2_size=256,
     #        tau=.02, max_size=100000, layer1_size=400, layer2_size=300, n_actions=env.action_space.shape[0], reward_scale=15, auto_entropy=True, disc_input_dims=(1,), predict_dims=1)
 
-    agent = Agent(alpha=.003, beta=.003, disc_lr=.0001, input_dims=in_dims, env=env, batch_size=256, disc_layer1_size=256, disc_layer2_size=256,
+    agent = Agent(alpha=.003, beta=.003, disc_lr=.001, input_dims=in_dims, env=env, batch_size=256, disc_layer1_size=256, disc_layer2_size=256,
         tau=.05, disc_batch_size=256, max_size=100000, layer1_size=400, layer2_size=300, n_actions=1, reward_scale=15, auto_entropy=True, disc_input_dims=(1,), predict_dims=1)
     #agent2 = pickle.load(open("agents\point_minus20_noCDF_lowLR_20scale_4000.p", "rb" ))
     #agent.discriminator = copy.deepcopy(agent2.discriminator)
@@ -93,7 +93,7 @@ if __name__ == '__main__':
             #if env_interacts % 400:
             #    limit_factor = np.random.uniform(low=0, high=1)
             observation[-1] = limit_factor
-            if env_interacts % 25 == 0:
+            if env_interacts % 100 == 0:
                 try:
                     act_loss, disc1_loss, disc1_log_probs, \
                         disc1_crit, entropy = agent.learn(update_params=True, update_disc=True)

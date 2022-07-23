@@ -14,10 +14,10 @@ from discriminator import Discriminator
 import copy
 
 discrim = Discriminator(lr=.0001, input_dims=(3,), layer1_size=256, layer2_size=256)
-agent2 = pickle.load(open("point_minus20_noCDF_lowLR_20scale_4000.p", "rb" ))
+agent2 = pickle.load(open("agents/point_minus20_noCDF_lowLR_20scale_4000.p", "rb" ))
 discrim.discriminator = copy.deepcopy(agent2.discriminator)
 
-state = [0, .05, .2]
+state = [0, .1, .99]
 
 reward = 0
-print(discrim.calculate_reward(state, reward, reward_threshold=.5))
+print(discrim.calculate_reward(state, reward, rew_threshold=-20))

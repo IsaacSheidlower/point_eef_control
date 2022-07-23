@@ -226,8 +226,8 @@ class Agent():
             #rew = (rew[:,-1]+reward)*10
             
             #print(rew)
-            rew = (rew[:,-1])*22
-            rew = torch.where(reward<-19, reward*22, rew)
+            rew = (rew[:,-1])*12
+            rew = torch.where(reward<-19, reward*2, rew)
             #print(torch.mean(rew))
             #rew = torch.where(reward>-100, reward*12, rew)
             #ind = torch.nonzero(reward < -40)
@@ -272,7 +272,12 @@ class Agent():
                 print(max(dist.scale), min(dist.scale))
                 print("diff", ((dist.cdf(disc_predictions)-dist.cdf(limit_factor))**2)[0])
                 self.discriminator.optimizer.zero_grad()
-                disc_loss = (F.mse_loss(disc_predictions, limit_factor)*10+ (torch.nan_to_num((1/(torch.abs((min(dist.loc)-max(dist.loc)))+.0001))))*10) 
+                disc_loss = (F.mse_loss(disc_predictions, limit_factor)*10+ (torch.nan_to_num((1/(torch.abs((min(dist.loc)-max(dist.loc)))+.0001))))*10 + \
+                    torch.var(disc_predictions)*10)
+                #disc_loss = (F.mse_loss(disc_predictions, limit_factor)*10 + \
+                #    torch.var(disc_predictions)*10)
+
+                print(torch.var(disc_predictions), "disc_predictions var")
                 #disc_loss = (F.mse_loss(disc_predictions, limit_factor) + 1/torch.std(dist.loc))*10 
                 #print(torch.std(dist.loc))
                 print("mse loss: ", F.mse_loss(disc_predictions, limit_factor))
